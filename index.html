@@ -389,12 +389,12 @@ function wordDoc(R){
 
   return "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>"
     +"<head><meta charset='utf-8'><style>"
-    +"body{font-family:Calibri,Arial,sans-serif;font-size:10pt;margin:2cm}"
-    +"table{border-collapse:collapse;width:100%}td{vertical-align:top;font-size:10pt}"
+    +"body{font-family:Calibri,Arial,sans-serif;font-size:10pt;margin:0;padding:0}"
+    +"@page{margin:2cm}table{border-collapse:collapse;width:100%}td{vertical-align:top;font-size:10pt}"
     +"</style></head><body><table>"
 
     // ── Koptekst ──
-    +'<tr><td colspan="3" style="background:#1e3a5f;color:white;font-weight:bold;text-align:center;padding:8px;font-size:12pt;border:2px solid #1e3a5f;">BEOORDELINGSFICHE THUISOPDRACHT (TO) BIJ HET OPO</td></tr>'
+    +'<tr><td colspan="3" style="background:#1e3a5f;color:white;font-weight:bold;text-align:center;padding:8px;font-size:12pt;border:2px solid #1e3a5f;">BEOORDELINGSFICHE THUISOPDRACHT (TO) BIJ HET OPO<br><span style="font-size:10pt;font-weight:normal;color:#93c5fd;">TO '+(R.toNum)+' \u2013 '+esc(TO[R.toNum]?TO[R.toNum].n:'')+'</span></td></tr>'
 
     // ── Studentinfo ──
     +'<tr>'
