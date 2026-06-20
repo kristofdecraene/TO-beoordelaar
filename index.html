@@ -45,7 +45,7 @@ input:focus,select:focus,textarea:focus{border-color:#3b82f6;background:#fff}
 .lb.on{background:#f0fdf4;border-color:#22c55e;color:#14532d;font-weight:700}
 .lb.onb{background:#fef2f2;border-color:#ef4444;color:#7f1d1d;font-weight:700}
 .ls{font-family:monospace;margin-right:5px;font-weight:700}
-.fba{width:100%;margin-top:5px;padding:6px 8px;font-size:11px;border:1px solid #e2e8f0;border-radius:6px;resize:vertical;min-height:42px;background:#fafafa;font-family:inherit}
+.fba{width:100%;margin-top:5px;padding:6px 8px;font-size:11px;border:1px solid #e2e8f0;border-radius:6px;resize:none;overflow:hidden;min-height:32px;background:#fafafa;font-family:inherit;box-sizing:border-box}
 .ckr{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;font-size:12px;cursor:pointer;line-height:1.4}
 .ckr input{width:14px;height:14px;cursor:pointer;margin-top:2px;flex-shrink:0}
 .ab{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
@@ -309,77 +309,152 @@ function buildPrompt(n){
 }
 
 /* ============================================================
-   WORD-DOCUMENT GENERATOR
+   WORD-DOCUMENT GENERATOR  (verticale lay-out, score rechts)
 ============================================================ */
 function wordDoc(R){
   var sc=R.scores, tot=R.total, nm=R.naam||'_________________________';
-  var HL='background-color:#c6efce;font-weight:bold;';
+  var HL ='background-color:#c6efce;font-weight:bold;';
   var HL2='background-color:#ffd7d7;font-weight:bold;';
-  var TD='border:1px solid #999;padding:5px;';
-  var TC='border:1px solid #999;padding:3px;text-align:center;';
+  var FB ='background-color:#eef4fb;';
+  var BL ='background-color:#dce6f1;';
+  // Cel-stijlen: TD=standaard, TDM=verticaal gecentreerd, TDC=gecentreerd+midden
+  var TD ='border:1px solid #999;padding:5px 7px;vertical-align:top;font-size:10pt;';
+  var TDM='border:1px solid #999;padding:5px 7px;vertical-align:middle;font-size:10pt;';
+  var TDC='border:1px solid #999;padding:5px 7px;text-align:center;vertical-align:middle;font-size:10pt;';
+  // Spacer tussen criteria
+  var SP='<tr><td colspan="3" style="background:#e8eef4;border:none;padding:3px 0;font-size:1pt">&nbsp;</td></tr>';
 
-  function rubRow(label,key,levs){
-    var sel=sc[key]?sc[key].l:0;
-    var fb=sc[key]?sc[key].fb:'';
-    var dCells=levs.map(function(l,i){
-      var on=i+1===sel;
-      return '<td style="'+TD+'width:16%;vertical-align:top;'+(on?HL:'')+'">'+l.d+(on&&fb?'<br><em style="font-size:8.5pt;color:#444">&rarr; '+nl2br(fb)+'</em>':'')+'</td>';
-    }).join('');
-    var sCells=levs.map(function(l,i){
-      var on=i+1===sel;
-      return '<td style="'+TC+(on?HL:'')+'">'+(on?'<b>':'')+(l.s>=0?'+':'')+l.s+(on?'</b>':'')+'</td>';
-    }).join('');
-    return '<tr><td rowspan="2" style="'+TD+'background:#dce6f1;font-weight:bold;vertical-align:middle;width:20%">'+label+'</td>'+dCells+'</tr><tr>'+sCells+'</tr>';
+  // ── Verticale rubricrijen: omschrijving links, score rechts ─────────────────
+  function rubricBlok(label, levs, selLv, fb) {
+    var n=levs.length, rows='';
+    levs.forEach(function(l,i){
+      var on=i+1===selLv;
+      var kleur=on?HL:'';
+      var sStr=(l.s>=0?'+':'')+l.s;
+      var sKl=l.s<0?'color:#9b1c1c;':'color:#166534;';
+      if(i===0){
+        rows+='<tr>'
+          +'<td rowspan="'+n+'" style="'+TDM+BL+'font-weight:bold;width:22%">'+label+'</td>'
+          +'<td style="'+TD+kleur+'width:71%">'+esc(l.d)+'</td>'
+          +'<td style="'+TDC+kleur+sKl+'font-weight:bold;width:7%">'+sStr+'</td>'
+          +'</tr>';
+      } else {
+        rows+='<tr>'
+          +'<td style="'+TD+kleur+'">'+esc(l.d)+'</td>'
+          +'<td style="'+TDC+kleur+sKl+'font-weight:bold;">'+sStr+'</td>'
+          +'</tr>';
+      }
+    });
+    if(fb){
+      rows+='<tr>'
+        +'<td style="'+TD+FB+'font-style:italic;font-weight:bold;color:#1e3a5f;">&#8618;&nbsp;Feedback</td>'
+        +'<td colspan="2" style="'+TD+FB+'font-style:italic;color:#334155;">'+nl2br(esc(fb))+'</td>'
+        +'</tr>';
+    }
+    return rows;
   }
 
-  var indL=sc.ind?sc.ind.l:1;
-  var indFb=sc.ind?sc.ind.fb:'';
-  var indRow='<tr><td style="'+TD+'background:#dce6f1;font-weight:bold;width:20%">INDIENEN</td>'
-    +'<td style="'+TD+'width:16%;'+(indL===1?HL:'')+'">De TO is voorzien van een voorblad met de naam van de student, het onderwerp en het type thuisopdracht.'+(indL===1&&indFb?'<br><em style="font-size:8.5pt;color:#444">&rarr; '+nl2br(indFb)+'</em>':'')+'</td>'
-    +'<td style="'+TD+'width:16%;'+(indL===2?HL:'')+'">De TO is niet voorzien van een voorblad met de naam van de student, het onderwerp en het type thuisopdracht.'+(indL===2&&indFb?'<br><em style="font-size:8.5pt;color:#444">&rarr; '+nl2br(indFb)+'</em>':'')+'</td>'
-    +'<td style="'+TD+'width:16%"></td><td style="'+TD+'width:16%"></td><td style="'+TD+'width:16%"></td></tr>'
-    +'<tr><td style="'+TD+'background:#dce6f1"></td>'
-    +'<td style="'+TC+(indL===1?HL:'')+'"><b>+1</b></td>'
-    +'<td style="'+TC+(indL===2?HL:'')+'"><b>-1</b></td>'
-    +'<td style="'+TC+'"></td><td style="'+TC+'"></td><td style="'+TC+'"></td></tr>';
+  // ── Multi-selectblok (bonus/malus) ─────────────────────────────────────────
+  function multiBlok(label, items, fb, isMalus) {
+    var n=items.length, rows='';
+    items.forEach(function(item,i){
+      var kleur=item.sel?(isMalus?HL2:HL):'';
+      var sStr=(item.s>=0?'+':'')+item.s;
+      var sKl=isMalus?'color:#9b1c1c;':'color:#166534;';
+      if(i===0){
+        rows+='<tr>'
+          +'<td rowspan="'+n+'" style="'+TDM+BL+'font-weight:bold;width:22%">'+label+'</td>'
+          +'<td style="'+TD+kleur+'width:71%">'+esc(item.d)+'</td>'
+          +'<td style="'+TDC+kleur+sKl+'font-weight:bold;width:7%">'+sStr+'</td>'
+          +'</tr>';
+      } else {
+        rows+='<tr>'
+          +'<td style="'+TD+kleur+'">'+esc(item.d)+'</td>'
+          +'<td style="'+TDC+kleur+sKl+'font-weight:bold;">'+sStr+'</td>'
+          +'</tr>';
+      }
+    });
+    if(fb){
+      rows+='<tr>'
+        +'<td style="'+TD+FB+'font-style:italic;font-weight:bold;color:#1e3a5f;">&#8618;&nbsp;Feedback</td>'
+        +'<td colspan="2" style="'+TD+FB+'font-style:italic;color:#334155;">'+nl2br(esc(fb))+'</td>'
+        +'</tr>';
+    }
+    return rows;
+  }
 
-  var eb=sc.eb||{};
-  var ebFb=eb.fb||'';
+  var eb=sc.eb||{}, em=sc.em||{};
   var allMet=(sc.ind&&sc.ind.s>=1)&&(sc.ts&&sc.ts.s>=1)&&(sc.il&&sc.il.s>=1)&&(sc.vl&&sc.vl.s>=1)&&(sc.br&&sc.br.s>=1);
-  var bonRow='<tr><td rowspan="2" style="'+TD+'background:#dce6f1;font-weight:bold;vertical-align:middle">EXTRA BONUS</td>'
-    +'<td style="'+TD+(eb.fd?HL:'')+'">Dit werkstuk springt in het oog door de frisse didactische uitwerking'+(eb.fd&&ebFb?'<br><em style="font-size:8.5pt;color:#444">&rarr; '+nl2br(ebFb)+'</em>':'')+'</td>'
-    +'<td style="'+TD+(eb.gi?HL:'')+'">Dit werkstuk springt in het oog door de inhoudelijk grondige uitwerking</td>'
-    +'<td style="'+TD+(allMet?HL:'')+'">Het geheel van het werkstuk voldoet op alle beoordelingscriteria aan de verwachtingen.</td>'
-    +'<td style="'+TD+(eb.zr?HL:'')+'">De student heeft een zelfreflectie ingediend.</td>'
-    +'<td style="'+TD+'"></td></tr>'
-    +'<tr><td style="'+TC+(eb.fd?HL:'')+'"><b>+2</b></td><td style="'+TC+(eb.gi?HL:'')+'"><b>+2</b></td><td style="'+TC+(allMet?HL:'')+'"><b>+1</b></td><td style="'+TC+(eb.zr?HL:'')+'"><b>+1</b></td><td style="'+TC+'"></td></tr>';
+  var indL=sc.ind?sc.ind.l:1;
 
-  var em=sc.em||{};
-  var emFb=em.fb||'';
-  var malRow='<tr><td rowspan="2" style="'+TD+'background:#dce6f1;font-weight:bold;vertical-align:middle">EXTRA MALUS</td>'
-    +'<td style="'+TD+(em.gr?HL2:'')+'">De student heeft geen zelfreflectie ingediend.'+(em.gr&&emFb?'<br><em style="font-size:8.5pt;color:#444">&rarr; '+nl2br(emFb)+'</em>':'')+'</td>'
-    +'<td style="'+TD+(em.tl?HL2:'')+'">De student is er niet in geslaagd om zich te beperken tot de opgave (lengte van de aangeleverde teksten, aantal illustraties, aantal didactische oefeningen).</td>'
-    +'<td style="'+TD+'"></td><td style="'+TD+'"></td><td style="'+TD+'"></td></tr>'
-    +'<tr><td style="'+TC+(em.gr?HL2:'')+'"><b>-1</b></td><td style="'+TC+(em.tl?HL2:'')+'"><b>-1</b></td><td style="'+TC+'"></td><td style="'+TC+'"></td><td style="'+TC+'"></td></tr>';
+  return "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>"
+    +"<head><meta charset='utf-8'><style>"
+    +"body{font-family:Calibri,Arial,sans-serif;font-size:10pt;margin:2cm}"
+    +"table{border-collapse:collapse;width:100%}td{vertical-align:top;font-size:10pt}"
+    +"</style></head><body><table>"
 
-  return "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'>\n<head><meta charset='utf-8'><style>body{font-family:Calibri,Arial,sans-serif;font-size:10pt;margin:1.5cm}table{border-collapse:collapse;width:100%}td{vertical-align:top;font-size:10pt}</style></head>\n<body>\n<table>"
-    +'<tr><td colspan="6" style="border:2px solid #1e3a5f;background:#1e3a5f;color:white;font-weight:bold;text-align:center;padding:8px;font-size:12pt">BEOORDELINGSFICHE THUISOPDRACHT (TO) BIJ HET OPO</td></tr>'
+    // ── Koptekst ──
+    +'<tr><td colspan="3" style="background:#1e3a5f;color:white;font-weight:bold;text-align:center;padding:8px;font-size:12pt;border:2px solid #1e3a5f;">BEOORDELINGSFICHE THUISOPDRACHT (TO) BIJ HET OPO</td></tr>'
+
+    // ── Studentinfo ──
     +'<tr>'
-    +'<td style="'+TD+'background:#dce6f1">naam student: <b>'+esc(nm)+'</b></td>'
-    +'<td style="'+TD+'background:#dce6f1">OPO: <b>'+esc(R.opo)+'</b></td>'
-    +'<td style="'+TD+'background:#dce6f1">beoordeeld door: Kristof De Craene</td>'
-    +'<td style="'+TD+'background:#dce6f1">datum: '+R.datum+'</td>'
-    +'<td colspan="2" style="'+TD+'background:#dce6f1">score (op twintig): <b style="font-size:13pt">'+tot+'/20</b></td>'
+    +'<td style="'+TD+BL+'width:22%">naam student: <b>'+esc(nm)+'</b></td>'
+    +'<td style="'+TD+BL+'">OPO: <b>'+esc(R.opo)+'</b> &nbsp;|&nbsp; beoordeeld door: Kristof De Craene &nbsp;|&nbsp; datum: '+R.datum+'</td>'
+    +'<td style="'+TDC+BL+'font-weight:bold;font-size:13pt;color:#1e3a5f;width:7%">'+tot+'/20</td>'
     +'</tr>'
-    +'<tr><td colspan="6" style="'+TD+'font-style:italic;font-size:9pt;background:#f9f9f9">Voor elk beoordelingscriterium zijn een aantal punten voorzien. De eindscore is nooit meer dan 20/20 en nooit minder dan 0/20.</td></tr>'
-    +indRow
-    +rubRow('TAAL &amp; STRUCTUUR','ts',RUB.ts)
-    +rubRow('UITWERKING<br>INHOUDELIJK LUIK','il',RUB.il)
-    +rubRow('UITWERKING<br>VAKDIDACTISCH LUIK','vl',RUB.vl)
-    +rubRow('BRONNEN','br',RUB.br)
-    +bonRow+malRow
-    +'<tr><td style="'+TD+'background:#dce6f1;font-weight:bold;vertical-align:top">GLOBAAL</td><td colspan="5" style="'+TD+'min-height:80px">'+nl2br(esc(R.global))+'</td></tr>'
-    +'<tr><td style="'+TD+'background:#dce6f1;font-weight:bold;vertical-align:top">AANDACHTSPUNTEN VOOR VOLGENDE TO</td><td colspan="5" style="'+TD+'min-height:60px">'+nl2br(esc(R.apt))+'</td></tr>'
+
+    // ── Infotekst ──
+    +'<tr><td colspan="3" style="'+TD+'background:#f5f5f5;font-style:italic;font-size:9pt;color:#475569;">Voor elk beoordelingscriterium zijn een aantal punten voorzien. De eindscore is nooit meer dan 20/20 en nooit minder dan 0/20.</td></tr>'
+    +SP
+
+    // ── INDIENEN ──
+    +rubricBlok('INDIENEN',[
+      {s:1, d:'De TO is voorzien van een voorblad met de naam van de student, het onderwerp en het type thuisopdracht.'},
+      {s:-1,d:'De TO is niet voorzien van een voorblad met de naam van de student, het onderwerp en het type thuisopdracht.'}
+    ],indL,sc.ind?sc.ind.fb:'')
+    +SP
+
+    // ── TAAL & STRUCTUUR ──
+    +rubricBlok('TAAL &amp; STRUCTUUR',RUB.ts,sc.ts?sc.ts.l:3,sc.ts?sc.ts.fb:'')
+    +SP
+
+    // ── INHOUDELIJK LUIK ──
+    +rubricBlok('UITWERKING INHOUDELIJK LUIK',RUB.il,sc.il?sc.il.l:3,sc.il?sc.il.fb:'')
+    +SP
+
+    // ── VAKDIDACTISCH LUIK ──
+    +rubricBlok('UITWERKING VAKDIDACTISCH LUIK',RUB.vl,sc.vl?sc.vl.l:3,sc.vl?sc.vl.fb:'')
+    +SP
+
+    // ── BRONNEN ──
+    +rubricBlok('BRONNEN',RUB.br,sc.br?sc.br.l:3,sc.br?sc.br.fb:'')
+    +SP
+
+    // ── EXTRA BONUS ──
+    +multiBlok('EXTRA BONUS',[
+      {s:2, d:'Dit werkstuk springt in het oog door de frisse didactische uitwerking.',              sel:eb.fd},
+      {s:2, d:'Dit werkstuk springt in het oog door de inhoudelijk grondige uitwerking.',            sel:eb.gi},
+      {s:1, d:'Het geheel van het werkstuk voldoet op alle beoordelingscriteria aan de verwachtingen. (automatisch toegekend)', sel:allMet},
+      {s:1, d:'De student heeft een zelfreflectie ingediend.',                                        sel:eb.zr}
+    ],eb.fb||'',false)
+    +SP
+
+    // ── EXTRA MALUS ──
+    +multiBlok('EXTRA MALUS',[
+      {s:-1,d:'De student heeft geen zelfreflectie ingediend.',                                                                                               sel:em.gr},
+      {s:-1,d:'De student is er niet in geslaagd om zich te beperken tot de opgave (lengte van de aangeleverde teksten, aantal illustraties, aantal didactische oefeningen).',sel:em.tl}
+    ],em.fb||'',true)
+    +SP
+
+    // ── GLOBAAL ──
+    +'<tr><td style="'+TDM+BL+'font-weight:bold;width:22%">GLOBAAL</td>'
+    +'<td colspan="2" style="'+TD+'">'+nl2br(esc(R.global))+'</td></tr>'
+    +SP
+
+    // ── AANDACHTSPUNTEN ──
+    +'<tr><td style="'+TDM+BL+'font-weight:bold;width:22%">AANDACHTSPUNTEN VOOR VOLGENDE TO</td>'
+    +'<td colspan="2" style="'+TD+'">'+nl2br(esc(R.apt))+'</td></tr>'
+
     +'</table>'
     +'<p style="margin-top:16px;font-size:8.5pt;color:#555;font-style:italic">Deze beoordeling is tot stand gekomen met ondersteuning van AI, volgens het principe \'mens &#8211; AI &#8211; mens\'. Dit betekent dat ik de opdracht eerst zelf heb geanalyseerd, waarna de feedback met behulp van AI is geformuleerd. Tot slot heb ik de tekst persoonlijk gecontroleerd en waar nodig aangepast. (Kristof De Craene)</p>'
     +'</body></html>';
@@ -582,7 +657,7 @@ function critCard(key,title,levs,sc,isBad){
   return '<div class="crit" id="crit-'+key+'">'
     +'<div class="ch"><span class="cn">'+title+'</span><span class="cs" style="color:'+scoreCol+'">'+scoreStr+'</span></div>'
     +'<div class="cb">'+btns
-    +'<textarea class="fba" placeholder="Feedback voor de student (verschijnt in het Word-document)..." oninput="updFb(\''+key+'\',this.value)">'+esc(cur.fb)+'</textarea>'
+    +'<textarea class="fba" placeholder="Feedback voor de student (verschijnt in het Word-document)..." oninput="autoH(this);updFb(\''+key+'\',this.value)">'+esc(cur.fb)+'</textarea>'
     +'</div></div>';
 }
 
@@ -632,7 +707,7 @@ function showResult(){
     +'<label class="ckr"><input type="checkbox" id="cb-gi" '+(sc.eb&&sc.eb.gi?'checked':'')+' onchange="updCB(\'gi\',this.checked)"><span><strong style="color:#15803d">+2</strong> &ndash; Inhoudelijk grondige uitwerking</span></label>'
     +'<div style="padding:4px 0 6px;font-size:11px;color:#475569;border-top:1px solid #f1f5f9;margin-top:4px;padding-top:6px"><strong style="color:#15803d">+1</strong> &ndash; Voldoet op alle criteria aan de verwachtingen &nbsp;<span id="ac-indicator" style="font-style:italic;font-size:10px;color:'+(sc.eb&&sc.eb.ac?'#15803d':'#94a3b8')+'">'+(sc.eb&&sc.eb.ac?'&#10003; automatisch toegekend':'&#10007; nog niet van toepassing')+'</span></div>'
     +'<label class="ckr"><input type="checkbox" id="cb-zr" '+(sc.eb&&sc.eb.zr?'checked':'')+' onchange="updCB(\'zr\',this.checked)"><span><strong style="color:#15803d">+1</strong> &ndash; Zelfreflectie ingediend</span></label>'
-    +'<textarea class="fba" placeholder="Toelichting bonus (optioneel)..." oninput="updFb(\'eb\',this.value)">'+esc(sc.eb?sc.eb.fb:'')+'</textarea>'
+    +'<textarea class="fba" placeholder="Toelichting bonus (optioneel)..." oninput="autoH(this);updFb(\'eb\',this.value)">'+esc(sc.eb?sc.eb.fb:'')+'</textarea>'
     +'</div></div>'
 
     +'<div class="crit" id="crit-em">'
@@ -640,16 +715,16 @@ function showResult(){
     +'<div class="cb">'
     +'<label class="ckr"><input type="checkbox" id="cb-gr" '+(sc.em&&sc.em.gr?'checked':'')+' onchange="updCM(\'gr\',this.checked)"><span><strong style="color:#b91c1c">-1</strong> &ndash; Geen zelfreflectie ingediend</span></label>'
     +'<label class="ckr"><input type="checkbox" id="cb-tl" '+(sc.em&&sc.em.tl?'checked':'')+' onchange="updCM(\'tl\',this.checked)"><span><strong style="color:#b91c1c">-1</strong> &ndash; Niet geslaagd om zich te beperken tot de opgave</span></label>'
-    +'<textarea class="fba" placeholder="Toelichting malus (optioneel)..." oninput="updFb(\'em\',this.value)">'+esc(sc.em?sc.em.fb:'')+'</textarea>'
+    +'<textarea class="fba" placeholder="Toelichting malus (optioneel)..." oninput="autoH(this);updFb(\'em\',this.value)">'+esc(sc.em?sc.em.fb:'')+'</textarea>'
     +'</div></div>'
 
     +'</div>'
 
     +'<div class="card"><div class="ct">&#128172; Globaal</div>'
-    +'<textarea id="ta-global" rows="4" style="font-size:13px;resize:vertical" oninput="S.result.global=this.value">'+esc(R.global)+'</textarea></div>'
+    +'<textarea id="ta-global" style="width:100%;font-size:13px;resize:none;overflow:hidden;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;background:#f8fafc;font-family:inherit;box-sizing:border-box" oninput="autoH(this);S.result.global=this.value">'+esc(R.global)+'</textarea></div>'
 
     +'<div class="card"><div class="ct">&#128204; Aandachtspunten voor volgende TO</div>'
-    +'<textarea id="ta-apt" rows="3" style="font-size:13px;resize:vertical" oninput="S.result.apt=this.value">'+esc(R.apt)+'</textarea></div>'
+    +'<textarea id="ta-apt" style="width:100%;font-size:13px;resize:none;overflow:hidden;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;background:#f8fafc;font-family:inherit;box-sizing:border-box" oninput="autoH(this);S.result.apt=this.value">'+esc(R.apt)+'</textarea></div>'
 
     +'<div class="ab">'
     +'<button class="btn btn-o" onclick="resetApp()">&#128203; Nieuwe opdracht</button>'
@@ -658,6 +733,8 @@ function showResult(){
     +'<p class="anote">Controleer en pas de beoordeling aan waar nodig v&oacute;&oacute;r je downloadt.</p>';
 
   document.getElementById('rp').innerHTML=html;
+  // Stel alle tekstvakjes meteen op volledige hoogte in
+  setTimeout(autoHAll, 0);
 }
 
 /* ============================================================
@@ -709,13 +786,31 @@ function updLevel(key,lv){
 
 function updFb(key,val){S.result.scores[key].fb=val;}
 
+// Auto-hoogte voor tekstvakjes
+function autoH(el){el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';}
+function autoHAll(){document.querySelectorAll('.fba,#ta-global,#ta-apt').forEach(function(el){autoH(el);});}
+
 function updCB(field,val){
-  var eb=S.result.scores.eb;eb[field]=val;
+  var sc=S.result.scores;
+  sc.eb[field]=val;
+  // Wederzijdse uitsluiting: zelfreflectie bonus <-> geen zelfreflectie malus
+  if(field==='zr'&&val){
+    sc.em.gr=false;
+    var cbGr=document.getElementById('cb-gr');
+    if(cbGr)cbGr.checked=false;
+  }
   updScore();
 }
 
 function updCM(field,val){
-  var em=S.result.scores.em;em[field]=val;
+  var sc=S.result.scores;
+  sc.em[field]=val;
+  // Wederzijdse uitsluiting: geen zelfreflectie malus <-> zelfreflectie bonus
+  if(field==='gr'&&val){
+    sc.eb.zr=false;
+    var cbZr=document.getElementById('cb-zr');
+    if(cbZr)cbZr.checked=false;
+  }
   updScore();
 }
 
